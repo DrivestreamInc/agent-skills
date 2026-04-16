@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# PATH shim: forwards to tools/install-agent-skills.sh (Bash/Git Bash/WSL).
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec bash "$ROOT/tools/install-agent-skills.sh" "$@"
