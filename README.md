@@ -97,6 +97,8 @@ The MCP installer **merges** into existing JSON: it only adds or updates the **`
 
 Both servers use remote **HTTP** MCP (`url`); no `npx` or Node.js is required for this bundle.
 
+**Cursor:** After install, these entries appear under **Settings → Tools & MCP** (or **Features → Model Context Protocol** in some versions), but **remote MCP servers are off until you turn them on**—that is [Cursor’s behavior](https://cursor.com/docs/context/mcp) for URL-based servers, not something this repo writes into JSON (there is no supported `mcp.json` field today that forces “enabled” on first open). Toggle each server **on** once; afterward Cursor usually remembers. From a terminal you can also run `agent mcp enable docs-langchain` and `agent mcp enable browser-use` ([Cursor CLI](https://cursor.com/docs/cli/mcp)).
+
 ---
 
 ## Install skills without cloning (recommended)
