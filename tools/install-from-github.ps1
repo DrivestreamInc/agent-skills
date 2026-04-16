@@ -14,8 +14,10 @@ param(
     [string] $TargetProject = ".",
 
     [Parameter()]
-    [ValidateSet("Cursor", "Claude", "Both")]
-    [string] $Flavor = "Both",
+    [string] $Flavor,
+
+    [Parameter()]
+    [switch] $NoInteractive,
 
     [Parameter()]
     [switch] $DryRun,
@@ -25,6 +27,33 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+function Test-AgentSkillsInteractiveHost {
+    try {
+        return -not [System.Console]::IsInputRedirected
+    } catch {
+        return $false
+    }
+}
+
+function Read-FlavorSelection {
+    Write-Host "Where should skills be installed?"
+    Write-Host "  1) Cursor  (.cursor/skills)"
+    Write-Host "  2) Claude  (.claude/skills)"
+    Write-Host "  3) Both"
+    while ($true) {
+        $c = Read-Host "Choice [1-3] (default 3)"
+        if ([string]::IsNullOrWhiteSpace($c)) {
+            return "Both"
+        }
+        switch ($c.Trim()) {
+            "1" { return "Cursor" }
+            "2" { return "Claude" }
+            "3" { return "Both" }
+            default { Write-Host "Invalid choice: enter 1, 2, or 3." }
+        }
+    }
+}
 
 if (-not $Repository) {
     $Repository = $env:AGENT_SKILLS_GITHUB_REPO
@@ -36,6 +65,24 @@ if (-not $Repository) {
 
 if ($Repository -notmatch '^([^/]+)/([^/]+)$') {
     Write-Error "Repository must be OWNER/REPO with a single slash (got: $Repository)"
+    exit 1
+}
+
+if ($env:AGENT_SKILLS_NONINTERACTIVE -eq "1") {
+    $NoInteractive = $true
+}
+
+if ($PSBoundParameters.ContainsKey("Flavor")) {
+    $resolvedFlavor = $Flavor
+} elseif (-not $NoInteractive -and (Test-AgentSkillsInteractiveHost)) {
+    $resolvedFlavor = Read-FlavorSelection
+} else {
+    $resolvedFlavor = "Both"
+}
+
+$valid = @("Cursor", "Claude", "Both")
+if ($resolvedFlavor -notin $valid) {
+    Write-Error "Invalid flavor: $resolvedFlavor (use Cursor, Claude, or Both)"
     exit 1
 }
 
@@ -64,9 +111,10 @@ try {
 
     $installScript = Join-Path $extractRoot.FullName "tools\install-agent-skills.ps1"
     $installArgs = @{
-        SourceRoot      = $extractRoot.FullName
-        TargetProject   = $TargetProject
-        Flavor          = $Flavor
+        SourceRoot    = $extractRoot.FullName
+        TargetProject = $TargetProject
+        Flavor        = $resolvedFlavor
+        NoInteractive = $true
     }
     if ($DryRun) { $installArgs["DryRun"] = $true }
     & $installScript @installArgs

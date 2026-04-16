@@ -5,8 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TARGET="."
+TARGET_SET_BY_FLAG=false
 FLAVOR="both"
+FLAVOR_EXPLICIT=false
 DRY_RUN=false
+NO_INTERACTIVE=false
 
 usage() {
     cat <<'EOF'
@@ -16,13 +19,33 @@ Usage: install-agent-skills.sh [options] [TARGET]
 
 Options:
   --source DIR        Repository root containing skills/ (default: parent of tools/)
-  --flavor NAME       cursor | claude | both   (default: both)
+  --target DIR        Same as TARGET (overrides positional TARGET if both given)
+  --flavor NAME       cursor | claude | both (omit on a TTY to choose interactively)
+  --no-interactive    Skip menu; use both if --flavor omitted (also AGENT_SKILLS_NONINTERACTIVE=1)
   --dry-run           Print actions without copying
   -h, --help          Show this help
 
 Legacy positional (optional):
   TARGET FLAVOR       Same as TARGET and --flavor (if no conflicting flags)
 EOF
+}
+
+prompt_flavor() {
+    echo "Where should skills be installed?" >&2
+    echo "  1) Cursor  (.cursor/skills)" >&2
+    echo "  2) Claude  (.claude/skills)" >&2
+    echo "  3) Both" >&2
+    while true; do
+        read -r -p "Choice [1-3] (default 3): " choice || true
+        case "${choice:-3}" in
+            1) FLAVOR="cursor"; break ;;
+            2) FLAVOR="claude"; break ;;
+            3|"") FLAVOR="both"; break ;;
+            *)
+                echo "Invalid choice: enter 1, 2, or 3." >&2
+                ;;
+        esac
+    done
 }
 
 # Parse args: support --flags and legacy "path flavor" at end
@@ -33,9 +56,19 @@ while [[ $# -gt 0 ]]; do
             SOURCE_ROOT="$(cd "$2" && pwd)"
             shift 2
             ;;
+        --target)
+            TARGET="$2"
+            TARGET_SET_BY_FLAG=true
+            shift 2
+            ;;
         --flavor)
             FLAVOR="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
+            FLAVOR_EXPLICIT=true
             shift 2
+            ;;
+        --no-interactive)
+            NO_INTERACTIVE=true
+            shift
             ;;
         --dry-run)
             DRY_RUN=true
@@ -67,10 +100,27 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#POSITIONAL[@]} -ge 1 ]]; then
+    if [[ "$TARGET_SET_BY_FLAG" == true ]]; then
+        echo "error: pass either --target or a positional TARGET, not both." >&2
+        exit 1
+    fi
     TARGET="${POSITIONAL[0]}"
 fi
 if [[ ${#POSITIONAL[@]} -ge 2 ]]; then
     FLAVOR="$(echo "${POSITIONAL[1]}" | tr '[:upper:]' '[:lower:]')"
+    FLAVOR_EXPLICIT=true
+fi
+
+if [[ "${AGENT_SKILLS_NONINTERACTIVE:-}" == "1" ]]; then
+    NO_INTERACTIVE=true
+fi
+
+if [[ "$FLAVOR_EXPLICIT" == false ]]; then
+    if [[ -t 0 ]] && [[ "$NO_INTERACTIVE" != true ]]; then
+        prompt_flavor
+    else
+        FLAVOR="both"
+    fi
 fi
 
 case "$FLAVOR" in

@@ -6,9 +6,11 @@ set -euo pipefail
 REPO="${AGENT_SKILLS_GITHUB_REPO:-}"
 REF="main"
 TARGET="."
-FLAVOR="both"
+FLAVOR=""
+FLAVOR_SPECIFIED=false
 DRY_RUN=false
 KEEP_DOWNLOAD=false
+NO_INTERACTIVE=false
 
 usage() {
     cat <<'EOF'
@@ -20,7 +22,8 @@ Required:
 Options:
   --ref REF             Branch or tag (default: main)
   --target DIR          Project to install into (default: .)
-  --flavor NAME         cursor | claude | both (default: both)
+  --flavor NAME         cursor | claude | both (omit on a TTY to choose interactively)
+  --no-interactive      Skip menu; use both if --flavor omitted (also AGENT_SKILLS_NONINTERACTIVE=1)
   --dry-run
   --keep-download       Do not delete temp extract
   -h, --help
@@ -28,6 +31,24 @@ Options:
 Example:
   curl -fsSL https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh | bash -s -- --repo DrivestreamInc/agent-skills --target .
 EOF
+}
+
+prompt_flavor() {
+    echo "Where should skills be installed?" >&2
+    echo "  1) Cursor  (.cursor/skills)" >&2
+    echo "  2) Claude  (.claude/skills)" >&2
+    echo "  3) Both" >&2
+    while true; do
+        read -r -p "Choice [1-3] (default 3): " choice || true
+        case "${choice:-3}" in
+            1) FLAVOR="cursor"; break ;;
+            2) FLAVOR="claude"; break ;;
+            3|"") FLAVOR="both"; break ;;
+            *)
+                echo "Invalid choice: enter 1, 2, or 3." >&2
+                ;;
+        esac
+    done
 }
 
 while [[ $# -gt 0 ]]; do
@@ -46,7 +67,12 @@ while [[ $# -gt 0 ]]; do
             ;;
         --flavor)
             FLAVOR="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
+            FLAVOR_SPECIFIED=true
             shift 2
+            ;;
+        --no-interactive)
+            NO_INTERACTIVE=true
+            shift
             ;;
         --dry-run)
             DRY_RUN=true
@@ -77,6 +103,26 @@ if [[ "$REPO" != */* ]] || [[ "$REPO" == */*/* ]]; then
     echo "Repository must be exactly OWNER/REPO (got: $REPO)" >&2
     exit 1
 fi
+
+if [[ "${AGENT_SKILLS_NONINTERACTIVE:-}" == "1" ]]; then
+    NO_INTERACTIVE=true
+fi
+
+if [[ "$FLAVOR_SPECIFIED" == false ]]; then
+    if [[ -t 0 ]] && [[ "$NO_INTERACTIVE" != true ]]; then
+        prompt_flavor
+    else
+        FLAVOR="both"
+    fi
+fi
+
+case "$FLAVOR" in
+    cursor|claude|both) ;;
+    *)
+        echo "Invalid flavor: $FLAVOR (use cursor, claude, or both)" >&2
+        exit 1
+        ;;
+esac
 
 REF_ENC="${REF//\//%2F}"
 URL="https://github.com/${REPO}/archive/refs/heads/${REF_ENC}.tar.gz"
@@ -116,4 +162,4 @@ if [[ "$DRY_RUN" == true ]]; then
     DRY_FLAG=(--dry-run)
 fi
 
-bash "$INSTALL_SH" --source "$SRC" --target "$TARGET" --flavor "$FLAVOR" "${DRY_FLAG[@]}"
+bash "$INSTALL_SH" --source "$SRC" --target "$TARGET" --flavor "$FLAVOR" --no-interactive "${DRY_FLAG[@]}"
