@@ -26,7 +26,7 @@ Options:
   -h, --help
 
 Example:
-  curl -fsSL https://raw.githubusercontent.com/OWNER/agent-skills/main/tools/install-from-github.sh | bash -s -- --repo OWNER/agent-skills --target .
+  curl -fsSL https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh | bash -s -- --repo DrivestreamInc/agent-skills --target .
 EOF
 }
 

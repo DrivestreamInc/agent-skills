@@ -2,9 +2,13 @@
 
 Single source of truth for **agent skills** used across projects. Each skill is a directory with `SKILL.md` (YAML frontmatter + Markdown), plus any supporting files.
 
-**Install into another project without cloning:** scripts download a GitHub archive to a temp directory, run the normal installer, then delete the temp files (unless you opt in to keep them).
+**Repository:** [github.com/DrivestreamInc/agent-skills](https://github.com/DrivestreamInc/agent-skills)
 
-Replace **`OWNER`** everywhere below with your GitHub user or organization (the segment in `https://github.com/OWNER/agent-skills`).
+```bash
+git clone https://github.com/DrivestreamInc/agent-skills.git
+```
+
+**Install into another project without cloning:** scripts download a GitHub archive to a temp directory, run the normal installer, then delete the temp files (unless you opt in to keep them).
 
 | Path | Purpose |
 |------|---------|
@@ -30,7 +34,7 @@ Claude Code also supports `~/.claude/skills/`. These installers default to the *
 
 ## Install without cloning (recommended)
 
-These commands pull **`main`** from `https://github.com/OWNER/agent-skills` and copy skills into the **current directory** (your other repo). They do **not** leave a permanent clone on disk (unless you pass keep flags).
+These commands pull **`main`** from `https://github.com/DrivestreamInc/agent-skills` and copy skills into the **current directory** (your other repo). They do **not** leave a permanent clone on disk (unless you pass keep flags).
 
 ### PowerShell (from the target project root)
 
@@ -38,20 +42,20 @@ Download the bootstrap script once, then run it (works on locked-down machines w
 
 ```powershell
 $i = "$env:TEMP\agent-skills-install-from-github.ps1"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/OWNER/agent-skills/main/tools/install-from-github.ps1" -OutFile $i -UseBasicParsing
-powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "OWNER/agent-skills" -TargetProject . -Flavor Both
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.ps1" -OutFile $i -UseBasicParsing
+powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -Flavor Both
 ```
 
 Dry run (target folder must already exist):
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "OWNER/agent-skills" -TargetProject . -Flavor Both -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -Flavor Both -DryRun
 ```
 
-Optional: set **`AGENT_SKILLS_GITHUB_REPO`** to `OWNER/agent-skills` so you can omit `-Repository`:
+Optional: set **`AGENT_SKILLS_GITHUB_REPO`** to `DrivestreamInc/agent-skills` so you can omit `-Repository`:
 
 ```powershell
-$env:AGENT_SKILLS_GITHUB_REPO = "OWNER/agent-skills"
+$env:AGENT_SKILLS_GITHUB_REPO = "DrivestreamInc/agent-skills"
 powershell -NoProfile -ExecutionPolicy Bypass -File $i -TargetProject . -Flavor Both
 ```
 
@@ -60,25 +64,25 @@ Other switches: **`-Ref`** branch name (default `main`), **`-KeepDownload`** lea
 ### Bash (from the target project root)
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/OWNER/agent-skills/main/tools/install-from-github.sh" | bash -s -- --repo "OWNER/agent-skills" --target . --flavor both
+curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh" | bash -s -- --repo "DrivestreamInc/agent-skills" --target . --flavor both
 ```
 
 Or set **`AGENT_SKILLS_GITHUB_REPO`** and omit **`--repo`**:
 
 ```bash
-export AGENT_SKILLS_GITHUB_REPO="OWNER/agent-skills"
-curl -fsSL "https://raw.githubusercontent.com/OWNER/agent-skills/main/tools/install-from-github.sh" | bash -s -- --target . --flavor both
+export AGENT_SKILLS_GITHUB_REPO="DrivestreamInc/agent-skills"
+curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh" | bash -s -- --target . --flavor both
 ```
 
 Options: **`--ref`**, **`--dry-run`**, **`--keep-download`**.
 
-**Note:** `raw.githubusercontent.com` URLs only work after this repository exists on GitHub with that owner/name and branch.
+**Note:** `raw.githubusercontent.com` URLs resolve the `main` branch of [DrivestreamInc/agent-skills](https://github.com/DrivestreamInc/agent-skills).
 
 ---
 
 ## Optional: install from a local clone
 
-If you already cloned `https://github.com/OWNER/agent-skills.git` (for example at `~/agent-skills` or `%USERPROFILE%\agent-skills`):
+If you already cloned `https://github.com/DrivestreamInc/agent-skills.git` (for example at `~/agent-skills` or `%USERPROFILE%\agent-skills`):
 
 **PowerShell**
 

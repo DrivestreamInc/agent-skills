@@ -30,7 +30,7 @@ if (-not $Repository) {
     $Repository = $env:AGENT_SKILLS_GITHUB_REPO
 }
 if (-not $Repository) {
-    Write-Error "Pass -Repository OWNER/REPO (e.g. octocat/agent-skills) or set environment variable AGENT_SKILLS_GITHUB_REPO."
+    Write-Error "Pass -Repository OWNER/REPO (e.g. DrivestreamInc/agent-skills) or set environment variable AGENT_SKILLS_GITHUB_REPO."
     exit 1
 }
 
