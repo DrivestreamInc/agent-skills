@@ -1,6 +1,6 @@
 # agent-skills
 
-Single source of truth for **agent skills** and **default MCP server entries** used across projects. Each skill is a directory with `SKILL.md` (YAML frontmatter + Markdown), plus any supporting files. MCP defaults are defined in `mcps/servers.json` and merged into each target project’s Cursor and/or Claude Code config.
+This repository is the **single source of truth** for **agent skills** (Markdown skill packs with YAML frontmatter) and **default MCP server entries** used across projects. Skills live under `skills/<skill-name>/` as `SKILL.md` plus optional supporting files. MCP defaults are defined in `mcps/servers.json` and merged into each target’s Cursor and/or Claude Code configuration. The goal is one place to maintain conventions and tooling so agents and humans install the same bundles everywhere.
 
 **Repository:** [github.com/DrivestreamInc/agent-skills](https://github.com/DrivestreamInc/agent-skills)
 
@@ -8,50 +8,85 @@ Single source of truth for **agent skills** and **default MCP server entries** u
 git clone https://github.com/DrivestreamInc/agent-skills.git
 ```
 
-**Install into another project without cloning:** scripts download a GitHub archive to a temp directory, run the normal installer, then delete the temp files (unless you opt in to keep them).
+---
 
-| Path | Purpose |
-|------|---------|
-| `skills/<skill-name>/` | Canonical skills copied into targets |
-| `mcps/servers.json` | Canonical MCP entries merged into targets (`docs-langchain`, `browser-use`) |
-| `tools/install-from-github.ps1` | **No clone (Windows):** download repo from GitHub, then install skills |
-| `tools/install-from-github.sh` | **No clone (Unix):** same, for Bash |
-| `tools/install-mcps-from-github.ps1` | **No clone (Windows):** download repo, then merge MCP defaults |
-| `tools/install-mcps-from-github.sh` | **No clone (Unix):** same, for Bash |
-| `tools/install-agent-skills.ps1` | Local skills installer (used after clone or by the GitHub bootstrap) |
+## Quick start
+
+1. **Open a terminal at the root of the project** where you want skills (or MCP defaults) installed—not inside this repo unless you are developing here.
+2. **Choose a path:**
+   - **Skills only (no clone):** run the bootstrap for your shell ([PowerShell](#install-skills-without-cloning-powershell) or [Bash](#install-skills-without-cloning-bash)). Examples below use a fixed flavor so copy-paste is deterministic; omit flavor in an interactive terminal to choose Cursor vs Claude vs both before download.
+   - **MCP defaults only:** follow [Install MCP defaults without cloning](#install-mcp-defaults-without-cloning).
+   - **You already cloned this repo:** use [Install from a local clone](#install-from-a-local-clone) or add `bin/` to `PATH` and run the shims (`agent-skills`, `agent-mcps`).
+3. **Re-run the same install command later** to refresh from `main` ([Updating skills and MCP defaults](#updating-skills-and-mcp-defaults)).
+
+**Bootstrap without cloning:** installers download a GitHub archive to a temp directory, run the normal installer, then delete temp files (unless you opt in to keep them).
+
+---
+
+## Commands (reference)
+
+| Command / script | Purpose |
+|------------------|---------|
+| `tools/install-from-github.ps1` | **Windows:** download repo from GitHub, install skills into a target project |
+| `tools/install-from-github.sh` | **Unix:** same for Bash |
+| `tools/install-mcps-from-github.ps1` | **Windows:** download repo, merge MCP defaults only |
+| `tools/install-mcps-from-github.sh` | **Unix:** same |
+| `tools/install-agent-skills.ps1` | Local skills installer (after clone or from bootstrap) |
 | `tools/install-agent-skills.sh` | Local skills installer (Bash) |
-| `tools/install-agent-mcps.ps1` | Local MCP merger (used after clone or by `install-mcps-from-github`) |
-| `tools/install-agent-mcps.sh` | Local MCP merger (Bash; requires `python3` for JSON merge) |
+| `tools/install-agent-mcps.ps1` | Local MCP merger |
+| `tools/install-agent-mcps.sh` | Local MCP merger (Bash; needs `python3` for JSON merge) |
 | `tools/validate-skills.ps1` | Validates `skills/*/SKILL.md` frontmatter |
 | `tools/validate-mcps.ps1` | Validates `mcps/servers.json` |
-| `bin/agent-skills.cmd` | Windows PATH shim → [`install-agent-skills.ps1`](tools/install-agent-skills.ps1) (needs a checkout; same interactive prompts as the script when `-Flavor` is omitted) |
-| `bin/agent-skills` | macOS / Linux / Git Bash / WSL PATH shim → [`install-agent-skills.sh`](tools/install-agent-skills.sh) (**executable in git** on Unix; same interactive prompts when `--flavor` is omitted) |
-| `bin/agent-mcps.cmd` | Windows PATH shim → [`install-agent-mcps.ps1`](tools/install-agent-mcps.ps1) |
-| `bin/agent-mcps` | Unix PATH shim → [`install-agent-mcps.sh`](tools/install-agent-mcps.sh) |
+| `bin/agent-skills.cmd` | Windows PATH shim → `install-agent-skills.ps1` (needs a checkout; same prompts as the script when `-Flavor` is omitted) |
+| `bin/agent-skills` | Unix / Git Bash / WSL PATH shim → `install-agent-skills.sh` (executable on Unix; same prompts when `--flavor` is omitted) |
+| `bin/agent-mcps.cmd` | Windows PATH shim → `install-agent-mcps.ps1` |
+| `bin/agent-mcps` | Unix PATH shim → `install-agent-mcps.sh` |
 
-## Interactive install (local and bootstrap)
+---
 
-This applies on **all platforms:** **PowerShell on Windows** (including bootstrap and local install) and **Bash on macOS, Linux, Git Bash, and WSL**.
+## Architecture
 
-When you run **`install-agent-skills`**, **`install-from-github`**, **`install-agent-mcps`**, or **`install-mcps-from-github`** in a **terminal** and you **do not** pass a flavor (`--flavor` / `-Flavor`), the script asks whether to install for **Cursor**, **Claude**, or **both** (skills go under `.cursor/skills` / `.claude/skills`; MCP entries merge into `.cursor/mcp.json` / `.mcp.json`). Piped or redirected input (for example `curl … | bash`, or PowerShell with redirected stdin) is **not** a TTY, so the installer **defaults to both** with no prompt.
+| Area | Role |
+|------|------|
+| `skills/<skill-name>/` | Canonical skills copied into target projects |
+| `mcps/servers.json` | Canonical MCP entries merged into targets (e.g. `docs-langchain`, `browser-use`) |
+| `tools/` | Cross-platform installers and validators |
 
-To skip the menu in a terminal without passing a flavor, use **`--no-interactive`** (Bash) or **`-NoInteractive`** (PowerShell), or set **`AGENT_SKILLS_NONINTERACTIVE=1`**.
+**Behavior:** installers copy or merge from this layout into `.cursor/skills`, `.claude/skills`, and/or MCP JSON files in the **target** project so teams can commit installed skills and server entries. The MCP installer **merges** JSON: it only adds or updates named entries (see [Where MCP defaults land](#where-mcp-defaults-land)); it does not remove unrelated servers.
 
-## Where files land in another project
+---
 
-| Tool | Project-local path |
-|------|---------------------|
+## Interactive installs and non-interactive defaults
+
+Applies everywhere: **PowerShell on Windows** and **Bash on macOS, Linux, Git Bash, and WSL**.
+
+When you run `install-agent-skills`, `install-from-github`, `install-agent-mcps`, or `install-mcps-from-github` in a **terminal** and you **do not** pass a flavor (`--flavor` / `-Flavor`), the script asks whether to install for **Cursor**, **Claude**, or **both** (skills under `.cursor/skills` / `.claude/skills`; MCP entries merge into `.cursor/mcp.json` / `.mcp.json`).
+
+**Piped or redirected stdin** (for example `curl … | bash`, or PowerShell with redirected stdin) is **not** a TTY, so the installer **defaults to both** with no prompt.
+
+To skip the menu in a non-TTY context without passing a flavor, use **`--no-interactive`** (Bash), **`-NoInteractive`** (PowerShell), or **`AGENT_SKILLS_NONINTERACTIVE=1`**.
+
+**Note:** A piped `curl | bash` has no TTY, so with **`--flavor` omitted** the installer defaults to **both** without prompting.
+
+---
+
+## Where skills land in the target project
+
+| Tool | Path |
+|------|------|
 | Cursor | `<project>/.cursor/skills/<skill-name>/` |
 | Claude Code | `<project>/.claude/skills/<skill-name>/` |
 
 Claude Code also supports `~/.claude/skills/`. These installers default to the **project** root so you can commit the result. If you use `CLAUDE_CONFIG_DIR`, resolve paths relative to that layout. When no flavor is specified and input is **not** interactive, they default to installing **both** Cursor and Claude paths.
 
-## Where MCP defaults land in another project
+---
+
+## Where MCP defaults land
 
 The MCP installer **merges** into existing JSON: it only adds or updates the **`docs-langchain`** and **`browser-use`** entries under `mcpServers`. Any other servers you already had stay as-is.
 
-| Tool | Project-local path |
-|------|---------------------|
+| Tool | Path |
+|------|------|
 | Cursor | `<project>/.cursor/mcp.json` |
 | Claude Code | `<project>/.mcp.json` |
 
@@ -64,13 +99,13 @@ Both servers use remote **HTTP** MCP (`url`); no `npx` or Node.js is required fo
 
 ---
 
-## Install without cloning (recommended)
+## Install skills without cloning (recommended)
 
 These commands pull **`main`** from `https://github.com/DrivestreamInc/agent-skills` and copy skills into the **current directory** (your other repo). They do **not** leave a permanent clone on disk (unless you pass keep flags).
 
-### PowerShell (from the target project root)
+### PowerShell
 
-In an **interactive** console, omit **`-Flavor`** to choose Cursor vs Claude vs both **before** downloading. The examples below pass **`-Flavor Both`** so copy-paste stays deterministic.
+In an **interactive** console, omit **`-Flavor`** to choose Cursor vs Claude vs both **before** downloading. The example passes **`-Flavor Both`** so copy-paste stays deterministic.
 
 Download the bootstrap script once, then run it (works on locked-down machines where `iex irm` is discouraged):
 
@@ -95,9 +130,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File $i -TargetProject . -Flavor 
 
 Other switches: **`-Ref`** branch name (default `main`), **`-KeepDownload`** leaves the temp extract under `%TEMP%` for debugging.
 
-### Bash (from the target project root)
+### Bash
 
-In an **interactive** terminal, omit **`--flavor`** to choose Cursor vs Claude vs both **before** downloading. The examples below pass **`--flavor both`** so copy-paste stays deterministic.
+In an **interactive** terminal, omit **`--flavor`** to choose Cursor vs Claude vs both **before** downloading. The example passes **`--flavor both`** so copy-paste stays deterministic.
 
 ```bash
 curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh" | bash -s -- --repo "DrivestreamInc/agent-skills" --target . --flavor both
@@ -112,13 +147,17 @@ curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/t
 
 Options: **`--ref`**, **`--dry-run`**, **`--keep-download`**, **`--no-interactive`**. Omit **`--flavor`** in an interactive terminal to choose Cursor vs Claude vs both **before** the archive is downloaded.
 
-**Note:** `raw.githubusercontent.com` URLs resolve the `main` branch of [DrivestreamInc/agent-skills](https://github.com/DrivestreamInc/agent-skills). A piped `curl | bash` has no TTY, so with **`--flavor` omitted** the installer defaults to **both** without prompting.
+`raw.githubusercontent.com` URLs resolve the `main` branch of [DrivestreamInc/agent-skills](https://github.com/DrivestreamInc/agent-skills).
 
-### MCP defaults without cloning (separate bootstrap)
+---
+
+## Install MCP defaults without cloning
 
 These commands pull **`main`** and merge [`mcps/servers.json`](mcps/servers.json) into the **current directory** (your other repo). They do **not** change the skills-only bootstrap scripts.
 
-**PowerShell** (examples use **`-Flavor Both`** for deterministic copy-paste):
+### PowerShell
+
+Examples use **`-Flavor Both`** for deterministic copy-paste:
 
 ```powershell
 $i = "$env:TEMP\agent-mcps-install-from-github.ps1"
@@ -132,7 +171,7 @@ Dry run:
 powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -Flavor Both -DryRun
 ```
 
-**Bash:**
+### Bash
 
 ```bash
 curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-mcps-from-github.sh" | bash -s -- --repo "DrivestreamInc/agent-skills" --target . --flavor both
@@ -142,7 +181,7 @@ Use **`AGENT_SKILLS_GITHUB_REPO`**, **`-Ref`**, **`-KeepDownload`** / **`--keep-
 
 ---
 
-## Optional: install from a local clone
+## Install from a local clone
 
 If you already cloned `https://github.com/DrivestreamInc/agent-skills.git` (for example at `~/agent-skills` or `%USERPROFILE%\agent-skills`):
 
@@ -158,7 +197,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\agent-skil
 "$HOME/agent-skills/tools/install-agent-skills.sh" --target . --flavor both
 ```
 
-Add the clone’s **`bin`** folder to **`PATH`** so you can run the short commands **`agent-skills`** (macOS, Linux, Git Bash, WSL) or **`agent-skills.cmd`** (Windows). Both shims call the installers under `tools/` and show the **same** Cursor / Claude / both menu when you omit flavor in an interactive console.
+Add the clone’s **`bin`** folder to **`PATH`** so you can run **`agent-skills`** (macOS, Linux, Git Bash, WSL) or **`agent-skills.cmd`** (Windows). Both shims call the installers under `tools/` and show the **same** Cursor / Claude / both menu when you omit flavor in an interactive console.
 
 **macOS / Linux / Git Bash / WSL** (adjust the path to your clone):
 
@@ -178,7 +217,7 @@ agent-skills.cmd
 
 With no **`-Flavor`** / **`--flavor`** in a normal interactive terminal, **`agent-skills`** or **`agent-skills.cmd`** prompts for Cursor vs Claude vs both.
 
-**MCP merge from a local clone**
+### MCP merge from a local clone
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\agent-skills\tools\install-agent-mcps.ps1" -TargetProject . -Flavor Both
@@ -192,7 +231,7 @@ Add **`bin`** to **`PATH`** to run **`agent-mcps`** or **`agent-mcps.cmd`** (sam
 
 ---
 
-## Updating skills in a project
+## Updating skills and MCP defaults
 
 Re-run the **without cloning** command above; each run fetches the latest **`main`** from GitHub and overwrites `.cursor/skills` / `.claude/skills` in the target project. If you use a local clone instead, `git pull` there and re-run `install-agent-skills`.
 
@@ -200,7 +239,7 @@ For **MCP defaults**, re-run **`install-mcps-from-github`** or **`install-agent-
 
 ---
 
-## Validate (maintainers / CI)
+## Validation (maintainers / CI)
 
 Requires a checkout or a downloaded copy of the repo. From the repository root:
 
@@ -228,7 +267,6 @@ pwsh -NoProfile -File ./tools/validate-mcps.ps1
 
 ---
 
-## Layout notes
+## Contributing
 
-- **`skills/`** holds canonical skills; Cursor and Claude Code both consume the same skill directories from there.
-- **`mcps/servers.json`** holds the canonical MCP entries merged by `install-agent-mcps`.
+Change skills under `skills/`, MCP defaults in `mcps/servers.json`, and keep installers in sync. Before opening a PR, run **`validate-skills.ps1`** and **`validate-mcps.ps1`** from a repo checkout.
