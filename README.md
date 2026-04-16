@@ -14,7 +14,7 @@ git clone https://github.com/DrivestreamInc/agent-skills.git
 
 1. **Open a terminal at the root of the project** where you want skills (or MCP defaults) installed—not inside this repo unless you are developing here.
 2. **Choose a path:**
-   - **Skills only (no clone):** run the bootstrap for your shell ([PowerShell](#install-skills-without-cloning-powershell) or [Bash](#install-skills-without-cloning-bash)). Examples below use a fixed flavor so copy-paste is deterministic; omit flavor in an interactive terminal to choose Cursor vs Claude vs both before download.
+   - **Skills only (no clone):** run the bootstrap for your shell ([PowerShell](#install-skills-without-cloning-powershell) or [Bash](#install-skills-without-cloning-bash)). Examples omit `--flavor` / `-Flavor` so you are prompted for Cursor vs Claude vs both on each run (in an interactive terminal; see [Interactive installs](#interactive-installs-and-non-interactive-defaults)).
    - **MCP defaults only:** follow [Install MCP defaults without cloning](#install-mcp-defaults-without-cloning).
    - **You already cloned this repo:** use [Install from a local clone](#install-from-a-local-clone) or add `bin/` to `PATH` and run the shims (`agent-skills`, `agent-mcps`).
 3. **Re-run the same install command later** to refresh from `main` ([Updating skills and MCP defaults](#updating-skills-and-mcp-defaults)).
@@ -105,47 +105,47 @@ These commands pull **`main`** from `https://github.com/DrivestreamInc/agent-ski
 
 ### PowerShell
 
-In an **interactive** console, omit **`-Flavor`** to choose Cursor vs Claude vs both **before** downloading. The example passes **`-Flavor Both`** so copy-paste stays deterministic.
-
-Download the bootstrap script once, then run it (works on locked-down machines where `iex irm` is discouraged):
+Run these in an **interactive** console so you are prompted for Cursor vs Claude vs both (**`-Flavor`** omitted). Download the bootstrap script once, then run it (works on locked-down machines where `iex irm` is discouraged):
 
 ```powershell
 $i = "$env:TEMP\agent-skills-install-from-github.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.ps1" -OutFile $i -UseBasicParsing
-powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -Flavor Both
+powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject .
 ```
 
 Dry run (target folder must already exist):
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -Flavor Both -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -DryRun
 ```
 
 Optional: set **`AGENT_SKILLS_GITHUB_REPO`** to `DrivestreamInc/agent-skills` so you can omit `-Repository`:
 
 ```powershell
 $env:AGENT_SKILLS_GITHUB_REPO = "DrivestreamInc/agent-skills"
-powershell -NoProfile -ExecutionPolicy Bypass -File $i -TargetProject . -Flavor Both
+powershell -NoProfile -ExecutionPolicy Bypass -File $i -TargetProject .
 ```
 
 Other switches: **`-Ref`** branch name (default `main`), **`-KeepDownload`** leaves the temp extract under `%TEMP%` for debugging.
 
 ### Bash
 
-In an **interactive** terminal, omit **`--flavor`** to choose Cursor vs Claude vs both **before** downloading. The example passes **`--flavor both`** so copy-paste stays deterministic.
+**Download then run** in an interactive terminal so you get the Cursor / Claude / both prompt (**`--flavor`** omitted). A one-line `curl … | bash` is **not** a TTY and defaults to **both** without prompting—see [Interactive installs](#interactive-installs-and-non-interactive-defaults).
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh" | bash -s -- --repo "DrivestreamInc/agent-skills" --target . --flavor both
+curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh" -o /tmp/install-from-github.sh
+bash /tmp/install-from-github.sh --repo "DrivestreamInc/agent-skills" --target .
 ```
 
 Or set **`AGENT_SKILLS_GITHUB_REPO`** and omit **`--repo`**:
 
 ```bash
 export AGENT_SKILLS_GITHUB_REPO="DrivestreamInc/agent-skills"
-curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh" | bash -s -- --target . --flavor both
+curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-from-github.sh" -o /tmp/install-from-github.sh
+bash /tmp/install-from-github.sh --target .
 ```
 
-Options: **`--ref`**, **`--dry-run`**, **`--keep-download`**, **`--no-interactive`**. Omit **`--flavor`** in an interactive terminal to choose Cursor vs Claude vs both **before** the archive is downloaded.
+Options: **`--ref`**, **`--dry-run`**, **`--keep-download`**, **`--no-interactive`**. Pass **`--flavor`** only if you want to skip the menu in a script.
 
 `raw.githubusercontent.com` URLs resolve the `main` branch of [DrivestreamInc/agent-skills](https://github.com/DrivestreamInc/agent-skills).
 
@@ -157,24 +157,27 @@ These commands pull **`main`** and merge [`mcps/servers.json`](mcps/servers.json
 
 ### PowerShell
 
-Examples use **`-Flavor Both`** for deterministic copy-paste:
+Run in an **interactive** console (**`-Flavor`** omitted) so you are prompted each time:
 
 ```powershell
 $i = "$env:TEMP\agent-mcps-install-from-github.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-mcps-from-github.ps1" -OutFile $i -UseBasicParsing
-powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -Flavor Both
+powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject .
 ```
 
 Dry run:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -Flavor Both -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File $i -Repository "DrivestreamInc/agent-skills" -TargetProject . -DryRun
 ```
 
 ### Bash
 
+Download then run in an interactive terminal (**`--flavor`** omitted); same TTY note as [skills without cloning](#bash).
+
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-mcps-from-github.sh" | bash -s -- --repo "DrivestreamInc/agent-skills" --target . --flavor both
+curl -fsSL "https://raw.githubusercontent.com/DrivestreamInc/agent-skills/main/tools/install-mcps-from-github.sh" -o /tmp/install-mcps-from-github.sh
+bash /tmp/install-mcps-from-github.sh --repo "DrivestreamInc/agent-skills" --target .
 ```
 
 Use **`AGENT_SKILLS_GITHUB_REPO`**, **`-Ref`**, **`-KeepDownload`** / **`--keep-download`**, and **`AGENT_SKILLS_NONINTERACTIVE=1`** the same way as the skills bootstrap.
@@ -188,13 +191,13 @@ If you already cloned `https://github.com/DrivestreamInc/agent-skills.git` (for 
 **PowerShell**
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\agent-skills\tools\install-agent-skills.ps1" -TargetProject . -Flavor Both
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\agent-skills\tools\install-agent-skills.ps1" -TargetProject .
 ```
 
 **Bash**
 
 ```bash
-"$HOME/agent-skills/tools/install-agent-skills.sh" --target . --flavor both
+"$HOME/agent-skills/tools/install-agent-skills.sh" --target .
 ```
 
 Add the clone’s **`bin`** folder to **`PATH`** so you can run **`agent-skills`** (macOS, Linux, Git Bash, WSL) or **`agent-skills.cmd`** (Windows). Both shims call the installers under `tools/` and show the **same** Cursor / Claude / both menu when you omit flavor in an interactive console.
@@ -220,11 +223,11 @@ With no **`-Flavor`** / **`--flavor`** in a normal interactive terminal, **`agen
 ### MCP merge from a local clone
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\agent-skills\tools\install-agent-mcps.ps1" -TargetProject . -Flavor Both
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\agent-skills\tools\install-agent-mcps.ps1" -TargetProject .
 ```
 
 ```bash
-"$HOME/agent-skills/tools/install-agent-mcps.sh" --target . --flavor both
+"$HOME/agent-skills/tools/install-agent-mcps.sh" --target .
 ```
 
 Add **`bin`** to **`PATH`** to run **`agent-mcps`** or **`agent-mcps.cmd`** (same flavor menu when `--flavor` / `-Flavor` is omitted in an interactive terminal).
